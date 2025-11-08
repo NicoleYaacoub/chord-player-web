@@ -156,7 +156,7 @@ def chord_to_freqs(ch_input):
     # Generate chord notes using musicpy
     ch = get_chord(base, ch_type)
 
-    # Split letter and octave
+    # Split letter and octave for each note
     notes_separated = []
     for n in ch:
         note = str(n)
@@ -164,17 +164,16 @@ def chord_to_freqs(ch_input):
         number = "".join([c for c in note if c.isdigit()])
         notes_separated.append((letter, number))
 
-    # Convert to frequencies
+    # Build main chord lists
     freqs = [midi_to_freq(note_to_midi(l, n)) for l, n in notes_separated]
-
-    # Add bass note if present
-    if bass_note:
-        bass_freq = midi_to_freq(note_to_midi(bass_note, notes_separated[0][1]))
-        freqs = [bass_freq] + freqs
-
     notes_list = [f"{l}{n}" for l, n in notes_separated]
+
+    # Add bass (slash chord), if present — force octave 3
     if bass_note:
-        notes_list.insert(0, bass_note + notes_separated[0][1])
+        bass_oct = '3'
+        bass_freq = midi_to_freq(note_to_midi(bass_note, bass_oct))
+        freqs = [bass_freq] + freqs
+        notes_list = [f"{bass_note}{bass_oct}"] + notes_list
 
     return freqs, notes_list
 

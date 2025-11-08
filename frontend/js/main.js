@@ -1,5 +1,5 @@
 /* ---------------------------------------
-   Main logic: send chord to Flask backend
+   MAIN FUNCTIONALITY: CHORD + AUDIO
 --------------------------------------- */
 
 document.getElementById("playBtn").addEventListener("click", async () => {
@@ -13,7 +13,6 @@ document.getElementById("playBtn").addEventListener("click", async () => {
     return;
   }
 
-  // Detect progression (multiple chords)
   const chords = chordInput.split(",").map(c => c.trim());
   const endpoint = chords.length > 1 ? "/api/progression" : "/api/chord";
   const body = chords.length > 1
@@ -32,22 +31,32 @@ document.getElementById("playBtn").addEventListener("click", async () => {
     const data = await res.json();
 
     if (data.status === "ok") {
+      // ---- notes coming from backend ----
+      let notes = data.notes || [];
+
+      // If user typed a slash chord, force the FIRST note (bass) to octave 3 for display,
+      // leaving the upper voices as delivered (typically around 4–5).
+      if (chordInput.includes("/")) {
+        notes = notes.map((n, i) => i === 0 ? n.replace(/\d+/, "3") : n);
+      }
+
+      // Keep notes within C3–C6 visually (only if something escaped)
+      notes = clampToRange(notes, 3, 6);
+
       output.innerHTML = `
         <h3>${data.chord || "Chord progression"}</h3>
-        <p><strong>Notes:</strong> ${
-          data.notes ? data.notes.join(", ") : data.chords.map(c => c[1].join(", ")).join(" | ")
-        }</p>
+        <p><strong>Notes:</strong> ${notes.join(", ")}</p>
       `;
 
-      // 🔥 highlight the notes on the piano
-      highlightNotes(data.notes || []);
+      // 🔥 highlight on the keyboard
+      highlightNotes(notes);
 
-      // 🎧 play audio
+      // 🎧 audio
       audioPlayer.src = data.audio_url;
       audioPlayer.play();
 
-      // 🕓 clear highlights automatically after sound finishes
-      setTimeout(clearHighlights, 2000); // matches 2s duration
+      // ⏳ clear after ~duration
+      setTimeout(clearHighlights, 2000);
     } else {
       output.innerHTML = "<p style='color:red'>Error generating audio.</p>";
     }
@@ -57,65 +66,87 @@ document.getElementById("playBtn").addEventListener("click", async () => {
   }
 });
 
-/* ---------------------------------------
-   Piano visual setup and highlighting
---------------------------------------- */
+// clamp visual notes to a given octave span (minOct .. maxOct inclusive of the top C)
+function clampToRange(notes, minOct, maxOct) {
+  return notes.map(n => {
+    const m = n.match(/^([A-G]#?b?)(\d)$/);
+    if (!m) return n;
+    let [, name, octStr] = m;
+    let oct = parseInt(octStr, 10);
+    if (oct < minOct) oct = minOct;
+    if (oct > maxOct) oct = maxOct;
+    return `${name}${oct}`;
+  });
+}
 
-// notes across two octaves (C4–B5)
-const NOTES = [
-  "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B",
-  "C5", "C#5", "D5", "D#5", "E5", "F5", "F#5", "G5", "G#5", "A5", "A#5", "B5"
-];
+/* ---------------------------------------
+   PIANO VISUALIZATION (C3 → C6)
+--------------------------------------- */
 
 const piano = document.getElementById("piano");
 
-// build the piano layout (aligned keys)
 function createPiano() {
-  const WHITE_NOTES = ["C", "D", "E", "F", "G", "A", "B"];
-  const BLACK_NOTES = ["C#", "D#", "F#", "G#", "A#"];
+  const whiteKeyWidth = 40;
+  const blackKeyOffset = { "C#": 0.65, "D#": 1.55, "F#": 3.4, "G#": 4.3, "A#": 5.2 };
   const NOTE_ORDER = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
-  const numOctaves = 2;
-  const whiteKeyWidth = 40;
+  const START_OCTAVE = 3;
+  const END_OCTAVE = 6; // exclusive → ends at B5; we will add C6 manually at the end
 
-  for (let octave = 4; octave < 4 + numOctaves; octave++) {
-    let whiteIndex = 0;
+  // Calculate white keys count & set piano width dynamically (centered by CSS margin:auto)
+  const whiteKeysCount = (END_OCTAVE - START_OCTAVE) * 7 + 1; // +C6
+  piano.style.width = `${whiteKeysCount * whiteKeyWidth}px`;
 
-    NOTE_ORDER.forEach(note => {
-      const key = document.createElement("div");
+  for (let octave = START_OCTAVE; octave < END_OCTAVE; octave++) {
+    NOTE_ORDER.forEach((note, i) => {
       const fullNote = `${note}${octave}`;
+      const key = document.createElement("div");
       key.dataset.note = fullNote;
 
-      if (BLACK_NOTES.includes(note)) {
+      if (note.includes("#")) {
         key.classList.add("key", "black");
-        // posicionar entre as brancas
-        key.style.left = `${(whiteIndex - 0.5) * whiteKeyWidth}px`;
+        key.style.left = `${(blackKeyOffset[note] + (octave - START_OCTAVE) * 7) * whiteKeyWidth}px`;
       } else {
         key.classList.add("key", "white");
-        key.style.left = `${whiteIndex * whiteKeyWidth}px`;
-        whiteIndex++;
+        key.style.left = `${((i - Math.floor(i / 2)) + (octave - START_OCTAVE) * 7) * whiteKeyWidth}px`;
       }
 
       piano.appendChild(key);
     });
   }
+
+  // Final C6
+  const lastKey = document.createElement("div");
+  lastKey.classList.add("key", "white");
+  lastKey.dataset.note = "C6";
+  lastKey.style.left = `${((END_OCTAVE - START_OCTAVE) * 7) * whiteKeyWidth}px`;
+  piano.appendChild(lastKey);
 }
 
+/* ---------------------------------------
+   NOTE HIGHLIGHTING (enharmonics)
+--------------------------------------- */
 
-// highlight active keys
 function highlightNotes(notes) {
   clearHighlights();
+
+  const normalize = n =>
+    n.replace("Db", "C#")
+     .replace("Eb", "D#")
+     .replace("Gb", "F#")
+     .replace("Ab", "G#")
+     .replace("Bb", "A#");
+
   notes.forEach(n => {
-    const pure = n.replace(/[0-9]/g, "");
-    const key = document.querySelector(`.key[data-note^='${pure}']`);
-    if (key) key.classList.add("active");
+    const fixed = normalize(n);
+    const el = document.querySelector(`.key[data-note='${fixed}']`);
+    if (el) el.classList.add("active");
   });
 }
 
-// clear all highlights
 function clearHighlights() {
   document.querySelectorAll(".key").forEach(k => k.classList.remove("active"));
 }
 
-// create piano when page loads
+// Build keyboard
 createPiano();
