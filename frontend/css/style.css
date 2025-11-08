@@ -1,0 +1,91 @@
+body {
+  background: #111;
+  color: #f8f8f8;
+  font-family: 'Segoe UI', sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.container {
+  text-align: center;
+  background: #1e1e1e;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+  width: 400px;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+input, select, button {
+  padding: 8px;
+  border-radius: 6px;
+  border: none;
+  font-size: 16px;
+}
+
+button {
+  background-color: #0078d7;
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+button:hover {
+  background-color: #005fa3;
+}
+
+audio {
+  width: 100%;
+}
+
+/* ---------------------- */
+/* Piano visual styles    */
+/* ---------------------- */
+
+
+#piano {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  margin: 25px auto;
+  width: 700px;
+  height: 180px;
+  background: #222;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.key.white {
+  width: 40px;
+  height: 160px;
+  background: white;
+  border: 1px solid #111;
+  border-radius: 0 0 5px 5px;
+  z-index: 1;
+  position: absolute;
+  box-sizing: border-box;
+  transition: all 0.1s ease;
+}
+
+.key.black {
+  width: 28px;
+  height: 100px;
+  background: black;
+  border-radius: 0 0 4px 4px;
+  position: absolute;
+  z-index: 2;
+  transition: all 0.1s ease;
+}
+
+.key.active {
+  background: #ffcc00 !important;
+  box-shadow: 0 0 15px #ffcc00;
+}

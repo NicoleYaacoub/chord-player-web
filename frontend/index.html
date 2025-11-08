@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chord Player Web</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>🎹 Chord Player Web</h1>
+
+    <div class="controls">
+      <label for="chordInput">Enter a chord or progression:</label>
+      <input type="text" id="chordInput" placeholder="Ex: Cmaj7, Am7, Dm7, G7" />
+
+      <label for="presetSelect">Preset:</label>
+      <select id="presetSelect">
+        <option value="piano">Piano</option>
+        <option value="strings">Strings</option>
+        <option value="pluck">Pluck</option>
+        <option value="accordion">Accordion</option>
+        <option value="pad">Pad</option>
+      </select>
+
+      <button id="playBtn">▶ Play</button>
+    </div>
+
+    <!-- Piano visual -->
+    <div id="piano">
+      <!-- As teclas são criadas automaticamente por JS -->
+    </div>
+
+    <div id="output"></div>
+
+    <audio id="audioPlayer" controls style="margin-top: 20px;"></audio>
+  </div>
+
+  <script src="/js/main.js"></script>
+</body>
+</html>
