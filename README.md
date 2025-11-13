@@ -56,11 +56,10 @@ CHORD_PLAYER_WEB/
 
 ### 1. Clone
 
-git clone https://github.com/SEU-REPO/chord-player-web.git
+git clone https://github.com/NicoleYaacoub/chord-player-web
 
 ### 2. Environment
 
-python -m venv venv\
 pip install -r requirements.txt
 
 ## ▶️ Run
