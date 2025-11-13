@@ -102,7 +102,13 @@ def get_audio():
     """Serve generated WAV files from /static."""
     path = request.args.get("path")
     full_path = os.path.join(os.path.dirname(__file__), "static", path)
+
+    # 🔒 Segurança opcional: verificar se o ficheiro existe
+    if not os.path.exists(full_path):
+        return jsonify({"error": "File not found"}), 404
+
     return send_file(full_path, mimetype="audio/wav")
+
 
 # ==============================
 # Frontend route
@@ -119,4 +125,6 @@ def serve_index():
 # ==============================
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=False)
+
+
