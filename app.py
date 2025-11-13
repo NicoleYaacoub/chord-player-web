@@ -12,19 +12,18 @@ from scipy.io.wavfile import write
 import tempfile
 
 # -----------------------------------
-# Flask setup
+# Flask setup (Render + Local friendly)
 # -----------------------------------
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-FRONTEND_DIR = os.path.join(PROJECT_ROOT, "frontend")
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+FRONTEND_DIR = os.path.join(CURRENT_DIR, "frontend")
 
 app = Flask(
     __name__,
-    static_folder=FRONTEND_DIR,      # absolute path to frontend
-    static_url_path=""               # leave empty to serve files correctly
+    static_folder=FRONTEND_DIR,
+    static_url_path=""
 )
 CORS(app)
-
 
 
 # ==============================
@@ -33,15 +32,16 @@ CORS(app)
 
 def save_temp_wav(signal, sample_rate=44100):
     """Save a NumPy signal to a temporary .wav file and return its path."""
-    temp_dir = os.path.join(os.path.dirname(__file__), "static")
+    temp_dir = os.path.join(CURRENT_DIR, "static")
     os.makedirs(temp_dir, exist_ok=True)
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav", dir=temp_dir)
     write(temp_file.name, sample_rate, signal)
     return temp_file.name
 
 
+
 # ==============================
-# Routes
+# API Routes
 # ==============================
 
 @app.route("/api/chord", methods=["POST"])
@@ -99,15 +99,15 @@ def api_progression():
 
 @app.route("/api/audio")
 def get_audio():
-    """Serve generated WAV files from /static."""
+    """Serve generated WAV files stored in /static."""
     path = request.args.get("path")
-    full_path = os.path.join(os.path.dirname(__file__), "static", path)
+    full_path = os.path.join(CURRENT_DIR, "static", path)
 
-    # 🔒 Segurança opcional: verificar se o ficheiro existe
     if not os.path.exists(full_path):
         return jsonify({"error": "File not found"}), 404
 
     return send_file(full_path, mimetype="audio/wav")
+
 
 
 # ==============================
@@ -117,14 +117,15 @@ def get_audio():
 @app.route("/")
 def serve_index():
     """Serve the frontend (index.html)."""
-    return send_from_directory(app.static_folder, "index.html")
+    return send_from_directory(FRONTEND_DIR, "index.html")
+
 
 
 # ==============================
-# Run
+# Run (Render-friendly)
 # ==============================
 
 if __name__ == "__main__":
+    # Render fornece PORT automaticamente
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
-
